@@ -25,7 +25,8 @@ jobs:
           assert(detectEmotion('Good news, the library is quiet.') === 'cheerful', 'cheerful');
           assert(detectEmotion('Sorry, the print shop is closed.') === 'empathetic', 'empathetic');
           assert(humanize('Library is at 40%').includes('40 percent'), 'percent');
-          assert(sentences('One. Two is longer than that. Three!').length >= 2, 'split');
+          assert(sentences('The library is quiet right now. The canteen is packed, so go after two. Want an alert?').length >= 2, 'split');
+          assert(humanize('Central Library is quiet.', 'cheerful').includes('Central Library'), 'names kept');
           console.log('unit checks passed');"
       - name: Live API health
         run: |

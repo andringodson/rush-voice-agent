@@ -60,9 +60,10 @@ export function humanize(text, emotion = 'neutral', lang = 'en') {
   const pool = OPENERS[lang]?.[emotion];
   if (pool && !/^(hi|hello|hey|good news|okay|so|ah|hmm|sorry|heads up)/i.test(out)) {
     const opener = pool[Math.floor(seeded(out) * pool.length)];
-    if (opener) out = `${opener} ${out.charAt(0).toLowerCase()}${out.slice(1)}`;
+    // Lowercase only a plain first word ("The", "It"), never a name ("Central Library").
+    if (opener) out = `${opener} ${/^(The|It|There|This|That|You|Your|Its|A|An)/.test(out) ? out.charAt(0).toLowerCase() + out.slice(1) : out}`;
   }
-  return out;
+  return out.replace(/([.!?]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
 }
 
 export function filler(lang = 'en', n = 0) {
@@ -77,7 +78,7 @@ export function sentences(text, max = 220) {
   for (const raw of parts) {
     const p = raw.trim();
     if (!p) continue;
-    if (out.length && (out[out.length - 1].length < 28 || p.length < 12) && out[out.length - 1].length + p.length < max) out[out.length - 1] += ` ${p}`;
+    if (out.length && (out[out.length - 1].length < 12 || p.length < 10) && out[out.length - 1].length + p.length < max) out[out.length - 1] += ` ${p}`;
     else if (p.length > max) out.push(...p.match(new RegExp(`.{1,${max}}(\\s|$)`, 'g')).map((s) => s.trim()));
     else out.push(p);
   }

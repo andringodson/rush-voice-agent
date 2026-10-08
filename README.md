@@ -16,7 +16,7 @@
 
 ```html
 <script type="module">
-  import { VoiceAgent, createTTS } from 'https://cdn.jsdelivr.net/gh/andringodson/rush-voice-agent@1.0.0/src/index.js';
+  import { VoiceAgent, createTTS } from 'https://cdn.jsdelivr.net/gh/andringodson/rush-voice-agent@1.0.1/src/index.js';
 
   const agent = new VoiceAgent({
     tts: createTTS({ endpoint: 'https://rush-voice-agent.vercel.app/api/tts' }), // or your own deployment
