@@ -1,6 +1,6 @@
 {
   "name": "rush-voice-agent",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Human-sounding, real-time voice call agent for the web: neural voices, emotion-aware prosody, barge-in, streaming, fallbacks. Free serverless TTS + chat API.",
   "type": "module",
   "main": "src/index.js",

@@ -61,7 +61,7 @@ export function humanize(text, emotion = 'neutral', lang = 'en') {
   if (pool && !/^(hi|hello|hey|good news|okay|so|ah|hmm|sorry|heads up)/i.test(out)) {
     const opener = pool[Math.floor(seeded(out) * pool.length)];
     // Lowercase only a plain first word ("The", "It"), never a name ("Central Library").
-    if (opener) out = `${opener} ${/^(The|It|There|This|That|You|Your|Its|A|An)/.test(out) ? out.charAt(0).toLowerCase() + out.slice(1) : out}`;
+    if (opener) out = `${opener} ${/^(The|It|There|This|That|You|Your|Its|A|An)\b/.test(out) ? out.charAt(0).toLowerCase() + out.slice(1) : out}`;
   }
   return out.replace(/([.!?]\s+)([a-z])/g, (m, p, c) => p + c.toUpperCase());
 }
