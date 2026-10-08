@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Rush Voice Agent · demo</title>
+  <meta name="description" content="Human-sounding, real-time voice calls for the web. Neural voices, emotion, barge-in." />
+  <meta name="theme-color" content="#05040a" />
+  <style>
+    :root { color-scheme: dark; --ease: cubic-bezier(0.23, 1, 0.32, 1); }
+    * { box-sizing: border-box; }
+    body { margin: 0; min-height: 100dvh; font-family: Inter, system-ui, -apple-system, 'Segoe UI', sans-serif; color: #fff; background: radial-gradient(60% 40% at 50% 25%, rgb(124 77 255 / 0.5), transparent 70%), radial-gradient(40% 35% at 20% 85%, rgb(255 61 154 / 0.3), transparent 70%), radial-gradient(40% 35% at 85% 75%, rgb(0 212 255 / 0.28), transparent 70%), #05040a; display: grid; place-items: center; padding: 24px 16px; }
+    main { width: min(100%, 30rem); display: grid; gap: 16px; text-align: center; }
+    h1 { margin: 0; font-size: clamp(1.6rem, 1.2rem + 2vw, 2.3rem); letter-spacing: -0.02em; }
+    p { margin: 0; color: rgb(255 255 255 / 0.72); line-height: 1.5; }
+    .orb { width: 140px; height: 140px; margin: 12px auto; border-radius: 50%; background: radial-gradient(circle at 35% 30%, #fff 0 6%, transparent 30%), linear-gradient(135deg, #7c4dff, #ff3d9a 60%, #ff8a3d); box-shadow: 0 20px 60px -10px rgb(124 77 255 / 0.8); transition: transform 300ms var(--ease); }
+    [data-state='speaking'] .orb { animation: talk 0.45s ease-in-out infinite alternate; }
+    [data-state='listening'] .orb { box-shadow: 0 0 0 10px rgb(34 197 94 / 0.25), 0 20px 60px -10px rgb(34 197 94 / 0.8); }
+    [data-state='thinking'] .orb { animation: think 1.2s linear infinite; }
+    @keyframes talk { from { transform: scale(0.96); } to { transform: scale(1.08); } }
+    @keyframes think { to { filter: hue-rotate(360deg); } }
+    .status { font-size: 0.9rem; min-height: 1.3em; color: rgb(255 255 255 / 0.85); }
+    .row { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+    select, input, button { font: inherit; color: inherit; border-radius: 14px; border: 1px solid rgb(255 255 255 / 0.2); background: rgb(255 255 255 / 0.08); padding: 10px 14px; }
+    input, select { font-size: 16px; }
+    button { cursor: pointer; font-weight: 600; transition: transform 140ms var(--ease); }
+    button:active { transform: scale(0.96); }
+    .call { background: #22c55e; border: 0; padding: 14px 26px; }
+    .end { background: #ef4444; border: 0; padding: 14px 26px; }
+    .log { display: grid; gap: 8px; text-align: start; max-height: 40vh; overflow: auto; }
+    .log p { width: fit-content; max-width: 90%; padding: 8px 12px; border-radius: 14px; background: rgb(255 255 255 / 0.1); color: #fff; }
+    .log p.user { justify-self: end; background: #fff; color: #0b0d12; }
+    .log p.interim { opacity: 0.6; }
+    .log small { display: block; opacity: 0.6; font-size: 0.72rem; }
+    footer { font-size: 0.8rem; color: rgb(255 255 255 / 0.5); }
+    a { color: #c4b5fd; }
+  </style>
+</head>
+<body>
+  <main data-state="idle">
+    <h1>Rush Voice Agent</h1>
+    <p>A free, human-sounding voice call for any web app. Neural voices, emotion, talk over it any time.</p>
+    <div class="orb" aria-hidden="true"></div>
+    <div class="status" data-status>Ready</div>
+    <div class="row">
+      <select data-lang aria-label="Language">
+        <option value="en">English (India)</option><option value="hi">हिन्दी</option><option value="ta">தமிழ்</option>
+        <option value="ml">മലയാളം</option><option value="kn">ಕನ್ನಡ</option><option value="te">తెలుగు</option>
+        <option value="bn">বাংলা</option><option value="mr">मराठी</option><option value="gu">ગુજરાતી</option>
+      </select>
+      <select data-gender aria-label="Voice"><option value="female">Female voice</option><option value="male">Male voice</option></select>
+    </div>
+    <div class="row">
+      <button class="call" type="button" data-start>📞 Start call</button>
+      <button class="end" type="button" data-end hidden>End</button>
+    </div>
+    <form class="row" data-typed hidden><input data-input placeholder="No mic? Type your reply" autocomplete="off" /><button>Send</button></form>
+    <div class="log" data-log aria-live="polite"></div>
+    <footer>Open source · <a href="https://github.com/andringodson/rush-voice-agent">GitHub</a> · powering <a href="https://andringodson.github.io/Hackathon-Ick-A-Thon/">Rushcast</a></footer>
+  </main>
+  <script type="module">
+    import { VoiceAgent, createTTS, earcon } from './src/index.js';
+    const $ = (s) => document.querySelector(s);
+    const main = $('main');
+    const log = $('[data-log]');
+    let agent = null;
+    let interimEl = null;
+
+    async function brain(question, { history, lang }) {
+      const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, history, lang: $('[data-lang]').selectedOptions[0].text, persona: 'You are Rush, a friendly, upbeat voice assistant demoing natural phone-call conversation. Keep replies short and warm.' }) });
+      if (!res.ok) return { text: "Sorry, my brain is a little busy right now. Try again in a moment?", emotion: 'empathetic' };
+      const d = await res.json();
+      return { text: d.answer, emotion: d.emotion };
+    }
+
+    function caption({ who, text, interim, emotion }) {
+      if (interim) {
+        interimEl ||= Object.assign(document.createElement('p'), { className: 'user interim' });
+        interimEl.textContent = text;
+        log.append(interimEl);
+      } else {
+        interimEl?.remove();
+        interimEl = null;
+        const p = document.createElement('p');
+        p.className = who === 'user' ? 'user' : '';
+        p.textContent = text;
+        if (emotion && who !== 'user') p.insertAdjacentHTML('beforeend', `<small>${emotion}</small>`);
+        log.append(p);
+      }
+      log.scrollTop = log.scrollHeight;
+    }
+
+    $('[data-start]').onclick = () => {
+      const lang = $('[data-lang]').value;
+      agent = new VoiceAgent({ tts: createTTS({ endpoint: '/api/tts', gender: $('[data-gender]').value }), brain, lang });
+      agent.on('state', (s) => { main.dataset.state = s; $('[data-status]').textContent = s[0].toUpperCase() + s.slice(1) + '…'; });
+      agent.on('caption', caption);
+      agent.on('typed-mode', () => ($('[data-typed]').hidden = false));
+      agent.on('ended', () => { earcon('hangup'); $('[data-start]').hidden = false; $('[data-end]').hidden = true; $('[data-status]').textContent = 'Call ended'; main.dataset.state = 'idle'; });
+      $('[data-start]').hidden = true;
+      $('[data-end]').hidden = false;
+      earcon('connect');
+      const greet = { en: "Hi! I'm Rush. Ask me anything — and feel free to talk over me.", hi: 'नमस्ते! मैं रश हूँ। कुछ भी पूछिए।', ta: 'வணக்கம்! நான் ரஷ். என்ன வேண்டுமானாலும் கேளுங்கள்.', ml: 'നമസ്കാരം! ഞാൻ റഷ് ആണ്. എന്തും ചോദിക്കാം.', kn: 'ನಮಸ್ಕಾರ! ನಾನು ರಶ್. ಏನು ಬೇಕಾದರೂ ಕೇಳಿ.', te: 'నమస్తే! నేను రష్. ఏదైనా అడగండి.' };
+      agent.start(greet[lang] || greet.en, { emotion: 'friendly' });
+    };
+    $('[data-end]').onclick = () => agent?.hangup();
+    $('[data-typed]').onsubmit = (e) => { e.preventDefault(); const v = $('[data-input]').value.trim(); $('[data-input]').value = ''; if (v) agent?.reply(v); };
+  </script>
+</body>
+</html>

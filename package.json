@@ -1,0 +1,17 @@
+{
+  "name": "rush-voice-agent",
+  "version": "1.0.0",
+  "description": "Human-sounding, real-time voice call agent for the web: neural voices, emotion-aware prosody, barge-in, streaming, fallbacks. Free serverless TTS + chat API.",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": { ".": "./src/index.js" },
+  "files": ["src", "api", "README.md", "LICENSE"],
+  "license": "MIT",
+  "author": "Team Error404 (Andrin Godson)",
+  "repository": { "type": "git", "url": "git+https://github.com/andringodson/rush-voice-agent.git" },
+  "keywords": ["voice", "tts", "speech", "voice-agent", "call", "neural-tts", "indian-languages", "barge-in", "vad"],
+  "engines": { "node": ">=18" },
+  "dependencies": {
+    "msedge-tts": "^2.0.9"
+  }
+}

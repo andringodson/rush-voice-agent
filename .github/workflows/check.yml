@@ -1,0 +1,34 @@
+name: Check & uptime
+
+on:
+  push:
+  schedule:
+    - cron: '23 */6 * * *'
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Syntax
+        run: for f in src/*.js api/*.js; do node --check "$f"; done
+      - name: Unit checks (emotion + sentence splitting)
+        run: |
+          node --input-type=module -e "
+          import { detectEmotion, humanize, sentences } from './src/emotion.js';
+          const assert = (c, m) => { if (!c) { console.error('FAIL', m); process.exit(1); } };
+          assert(detectEmotion('The canteen is packed right now.') === 'urgent', 'urgent');
+          assert(detectEmotion('Good news, the library is quiet.') === 'cheerful', 'cheerful');
+          assert(detectEmotion('Sorry, the print shop is closed.') === 'empathetic', 'empathetic');
+          assert(humanize('Library is at 40%').includes('40 percent'), 'percent');
+          assert(sentences('One. Two is longer than that. Three!').length >= 2, 'split');
+          console.log('unit checks passed');"
+      - name: Live API health
+        run: |
+          curl -fsS https://rush-voice-agent.vercel.app/api/health | tee health.json
+          curl -fsS -o probe.mp3 "https://rush-voice-agent.vercel.app/api/tts?text=Health%20check&lang=en&emotion=friendly"
+          test "$(stat -c %s probe.mp3)" -gt 2000 && echo "tts ok"
